@@ -68,3 +68,5 @@ courseSchema.index({ createdBy: 1 });
 
 module.exports = mongoose.model('Course', courseSchema);
 
+
+

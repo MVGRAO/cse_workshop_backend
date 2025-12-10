@@ -10,6 +10,7 @@ const connectDB = async () => {
     });
 
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`[DB] Connected to MongoDB at ${conn.connection.host}`);
   } catch (error) {
     logger.error(`Error connecting to MongoDB: ${error.message}`);
     process.exit(1);
@@ -26,4 +27,5 @@ mongoose.connection.on('error', (err) => {
 });
 
 module.exports = connectDB;
+
 

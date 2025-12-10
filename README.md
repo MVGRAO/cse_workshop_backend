@@ -91,7 +91,8 @@ cse_workshop_backend/
 │   ├── models/
 │   │   ├── User.js
 │   │   ├── Course.js
-│   │   ├── Module.js
+│   │   ├── Lesson.js        # New: lessons layer under courses
+│   │   ├── Module.js        # Modules now belong to a lesson + course
 │   │   ├── Assignment.js
 │   │   ├── Enrollment.js
 │   │   ├── Submission.js
@@ -101,6 +102,7 @@ cse_workshop_backend/
 │   │   ├── authController.js
 │   │   ├── userController.js
 │   │   ├── courseController.js
+│   │   ├── lessonController.js   # New
 │   │   ├── moduleController.js
 │   │   ├── enrollmentController.js
 │   │   ├── assignmentController.js
@@ -254,4 +256,6 @@ ISC
 ## Support
 
 For issues and questions, please contact the development team.
+
+
 
