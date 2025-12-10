@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
     },
+    password: {
+      type: String,
+      select: false, // Don't return password by default
+      minlength: [6, 'Password must be at least 6 characters'],
+    },
     googleId: {
       type: String,
       unique: true,
@@ -38,6 +43,26 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     mobile: {
+      type: String,
+      trim: true,
+    },
+    givenName: {
+      type: String,
+      trim: true,
+    },
+    familyName: {
+      type: String,
+      trim: true,
+    },
+    locale: {
+      type: String,
+      trim: true,
+    },
+    location: {
+      type: String,
+      trim: true,
+    },
+    phoneNumber: {
       type: String,
       trim: true,
     },

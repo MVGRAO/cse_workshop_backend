@@ -40,5 +40,9 @@ module.exports = {
 
   // Certificate
   CERTIFICATE_BASE_URL: process.env.CERTIFICATE_BASE_URL || 'http://localhost:5000',
+
+  // Development Mode - Bypass Authentication (ONLY FOR DEVELOPMENT!)
+  DEV_MODE: process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development',
+  DEV_BYPASS_AUTH: process.env.DEV_BYPASS_AUTH === 'true',
 };
 
