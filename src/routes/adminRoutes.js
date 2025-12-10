@@ -4,6 +4,7 @@ const authenticate = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/role');
 const courseController = require('../controllers/courseController');
 const moduleController = require('../controllers/moduleController');
+const lessonController = require('../controllers/lessonController');
 const assignmentController = require('../controllers/assignmentController');
 const userController = require('../controllers/userController');
 const analyticsController = require('../controllers/analyticsController');
@@ -25,9 +26,15 @@ router.post('/courses/:courseId/publish', courseController.publishCourse);
 router.post('/courses/:courseId/assign-verifier', courseController.assignVerifier);
 
 /**
+ * Lessons
+ */
+router.post('/courses/:courseId/lessons', lessonController.createLesson);
+router.patch('/lessons/:lessonId', lessonController.updateLesson);
+
+/**
  * Modules
  */
-router.post('/courses/:courseId/modules', moduleController.createModule);
+router.post('/lessons/:lessonId/modules', moduleController.createModule);
 router.patch('/modules/:moduleId', moduleController.updateModule);
 
 /**

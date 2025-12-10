@@ -4,6 +4,7 @@ const authenticate = require('../middleware/auth');
 const { requireStudent } = require('../middleware/role');
 const studentController = require('../controllers/studentController');
 const courseController = require('../controllers/courseController');
+const lessonController = require('../controllers/lessonController');
 const enrollmentController = require('../controllers/enrollmentController');
 const moduleController = require('../controllers/moduleController');
 const assignmentController = require('../controllers/assignmentController');
@@ -35,7 +36,7 @@ router.get('/enrollments/:id', enrollmentController.getEnrollment);
 /**
  * Modules
  */
-router.get('/courses/:courseId/modules', courseController.getCourseModules);
+router.get('/courses/:courseId/modules', moduleController.getCourseLessonsWithModules);
 router.get('/modules/:moduleId', moduleController.getModule);
 
 /**

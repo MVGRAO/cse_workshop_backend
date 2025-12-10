@@ -143,49 +143,7 @@ exports.assignVerifier = async (req, res, next) => {
   }
 };
 
-/**
- * GET /courses/:courseId/modules
- * Get course modules (student view)
- */
-exports.getCourseModules = async (req, res, next) => {
-  try {
-    const { courseId } = req.params;
+// Deprecated: course modules now retrieved via moduleController.getCourseLessonsWithModules
 
-    const course = await Course.findById(courseId);
 
-    if (!course) {
-      return error(res, 'Course not found', null, 404);
-    }
-
-    // Check if course has started
-    const now = new Date();
-    if (course.startTimestamp && now < course.startTimestamp) {
-      return error(res, 'Course has not started yet', null, 403);
-    }
-
-    // Check enrollment
-    const enrollment = await Enrollment.findOne({
-      student: req.user.id,
-      course: courseId,
-    });
-
-    if (!enrollment) {
-      return error(res, 'You are not enrolled in this course', null, 403);
-    }
-
-    const modules = await Module.find({ course: courseId })
-      .populate('assignment')
-      .sort({ index: 1 });
-
-    // Filter modules based on openAt/dueAt timestamps
-    const accessibleModules = modules.filter((module) => {
-      if (module.openAt && now < module.openAt) return false;
-      return true;
-    });
-
-    return success(res, 'Modules retrieved', accessibleModules);
-  } catch (err) {
-    next(err);
-  }
-};
 

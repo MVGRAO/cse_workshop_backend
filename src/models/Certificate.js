@@ -71,3 +71,5 @@ certificateSchema.index({ certificateNumber: 1 });
 
 module.exports = mongoose.model('Certificate', certificateSchema);
 
+
+

@@ -7,6 +7,11 @@ const moduleSchema = new mongoose.Schema(
       ref: 'Course',
       required: true,
     },
+    lesson: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Lesson',
+      required: true,
+    },
     index: {
       type: Number,
       required: true,
@@ -52,8 +57,11 @@ const moduleSchema = new mongoose.Schema(
 );
 
 // Indexes
-moduleSchema.index({ course: 1, index: 1 });
+moduleSchema.index({ course: 1, lesson: 1, index: 1 }, { unique: true });
 moduleSchema.index({ course: 1 });
+moduleSchema.index({ lesson: 1 });
 
 module.exports = mongoose.model('Module', moduleSchema);
+
+
 
