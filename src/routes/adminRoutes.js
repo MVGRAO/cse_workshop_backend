@@ -14,20 +14,25 @@ const User = require('../models/User');
 const { success, error } = require('../utils/response');
 
 // Apply authentication and admin role to all routes
+// NOTE: This only applies to routes defined AFTER this middleware
 router.use(authenticate);
 router.use(requireAdmin);
 
 /**
  * Courses
  */
+router.get('/courses', courseController.getAllCourses);
+router.get('/courses/:courseId', courseController.getCourseDetails);
 router.post('/courses', courseController.createCourse);
 router.patch('/courses/:courseId', courseController.updateCourse);
+router.delete('/courses/:courseId', courseController.deleteCourse);
 router.post('/courses/:courseId/publish', courseController.publishCourse);
 router.post('/courses/:courseId/assign-verifier', courseController.assignVerifier);
 
 /**
  * Lessons
  */
+router.get('/courses/:courseId/lessons', lessonController.getLessonsByCourse);
 router.post('/courses/:courseId/lessons', lessonController.createLesson);
 router.patch('/lessons/:lessonId', lessonController.updateLesson);
 

@@ -13,9 +13,15 @@ const enrollmentSchema = new mongoose.Schema(
       ref: 'Course',
       required: true,
     },
+    verifier :
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
     profileSnapshot: {
       name: String,
       email: String,
+      id:String,
       classYear: String,
       college: String,
       mobile: String,

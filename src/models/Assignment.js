@@ -19,6 +19,10 @@ const questionSchema = new mongoose.Schema({
   correctOptionIndex: {
     type: Number, // For MCQ auto-scoring
   },
+  answerText: {
+    type: String, // Answer explanation/text for MCQ questions
+    trim: true,
+  },
   maxMarks: {
     type: Number,
     required: true,

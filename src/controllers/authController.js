@@ -383,6 +383,60 @@ exports.login = async (req, res, next) => {
 };
 
 /**
+ * POST /auth/verifier/login
+ * Login specifically for verifier role
+ */
+exports.verifierLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return error(res, 'Email and password are required', null, 400);
+    }
+
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user || user.role !== 'verifier') {
+      return error(res, 'Invalid verifier credentials', null, 401);
+    }
+
+    if (!user.password) {
+      return error(res, 'Password login is not enabled for this verifier', null, 401);
+    }
+
+    if (!user.isActive) {
+      return error(res, 'Your account has been deactivated. Please contact support.', null, 403);
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return error(res, 'Invalid verifier credentials', null, 401);
+    }
+
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    const token = generateToken(user._id, user.role);
+
+    return success(res, 'Login successful', {
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        college: user.college,
+        classYear: user.classYear,
+        mobile: user.mobile,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * POST /auth/forgot-password
  * Request password reset
  */

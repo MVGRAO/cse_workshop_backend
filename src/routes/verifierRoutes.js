@@ -18,6 +18,7 @@ router.use(requireVerifier);
  * Courses
  */
 router.get('/courses', courseController.getVerifierCourses);
+router.get('/overview', enrollmentController.getVerifierOverview);
 
 /**
  * Students

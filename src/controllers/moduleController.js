@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const { success, error } = require('../utils/response');
+const constants = require('../utils/constants');
 
 /**
  * POST /admin/lessons/:lessonId/modules
@@ -117,6 +118,10 @@ exports.getCourseLessonsWithModules = async (req, res, next) => {
 
     if (!course) {
       return error(res, 'Course not found', null, 404);
+    }
+
+    if (course.status !== constants.COURSE_STATUS.PUBLISHED) {
+      return error(res, 'Course is not yet published. Please wait for admin to publish.', null, 403);
     }
 
     // Check course start

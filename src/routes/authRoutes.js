@@ -25,6 +25,13 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 
 /**
+ * @route   POST /api/v1/auth/verifier/login
+ * @desc    Login as verifier with email/password
+ * @access  Public
+ */
+router.post('/verifier/login', authController.verifierLogin);
+
+/**
  * @route   POST /api/v1/auth/forgot-password
  * @desc    Request password reset
  * @access  Public

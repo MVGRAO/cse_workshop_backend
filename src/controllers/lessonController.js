@@ -54,11 +54,22 @@ exports.updateLesson = async (req, res, next) => {
 };
 
 /**
- * GET /courses/:courseId/lessons
- * Get lessons for a course (with modules populated elsewhere)
+ * GET /admin/courses/:courseId/lessons
+ * Get lessons for a course (admin only)
  */
-exports.getLessonsByCourse = async (courseId) => {
-  const lessons = await Lesson.find({ course: courseId }).sort({ index: 1 });
-  return lessons;
+exports.getLessonsByCourse = async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+    
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return error(res, 'Course not found', null, 404);
+    }
+
+    const lessons = await Lesson.find({ course: courseId }).sort({ index: 1 });
+    return success(res, 'Lessons retrieved', lessons);
+  } catch (err) {
+    next(err);
+  }
 };
 

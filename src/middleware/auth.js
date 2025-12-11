@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/env');
 const User = require('../models/User');
+const Admin = require('../models/Admin');
 const { error } = require('../utils/response');
 const constants = require('../utils/constants');
 
@@ -60,6 +61,29 @@ const authenticate = async (req, res, next) => {
     try {
       // Verify token
       const decoded = jwt.verify(token, config.JWT_SECRET);
+
+      // Admin token flow
+      if (decoded.adminId || decoded.type === 'admin' || decoded.role === constants.ROLES.ADMIN) {
+        const adminId = decoded.adminId || decoded.userId;
+        const admin = await Admin.findById(adminId).select('-__v');
+
+        if (!admin) {
+          return error(res, 'Admin not found', null, 401);
+        }
+
+        if (!admin.isActive) {
+          return error(res, 'Admin account is inactive', null, 401);
+        }
+
+        req.user = {
+          id: admin._id.toString(),
+          role: constants.ROLES.ADMIN,
+          email: admin.email,
+          type: 'admin',
+        };
+        req.adminModel = admin;
+        return next();
+      }
 
       // Get user from database
       const user = await User.findById(decoded.userId).select('-__v');

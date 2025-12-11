@@ -14,10 +14,12 @@ const { httpLogger } = require('./src/utils/logger');
 
 // Import routes
 const authRoutes = require('./src/routes/authRoutes');
+const adminAuthRoutes = require('./src/routes/adminAuthRoutes');
 const studentRoutes = require('./src/routes/studentRoutes');
 const verifierRoutes = require('./src/routes/verifierRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const publicRoutes = require('./src/routes/publicRoutes');
+const verifierRequestRoutes = require('./src/routes/verifierRequestRoutes');
 
 // Initialize Express app
 const app = express();
@@ -66,10 +68,13 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+// Note: More specific routes must come BEFORE less specific routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/admin/auth', adminAuthRoutes); // More specific - must come before /api/v1/admin
+app.use('/api/v1/admin', adminRoutes); // Less specific - comes after /api/v1/admin/auth
 app.use('/api/v1/student', studentRoutes);
 app.use('/api/v1/verifier', verifierRoutes);
-app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/verifier-requests', verifierRequestRoutes);
 app.use('/api/v1', publicRoutes);
 
 // 404 handler
