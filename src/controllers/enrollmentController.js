@@ -10,12 +10,28 @@ const constants = require('../utils/constants');
  */
 exports.getStudentEnrollments = async (req, res, next) => {
   try {
+    const Certificate = require('../models/Certificate');
+    
     const enrollments = await Enrollment.find({ student: req.user.id })
       .populate('course', 'title code category level status description')
       .populate('verifier', 'name email college')
       .sort({ enrolledAt: -1 });
 
-    return success(res, 'Enrollments retrieved', enrollments);
+    // Add certificate data for completed enrollments
+    const enrollmentsWithCertificates = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        let certificate = null;
+        if (enrollment.status === constants.ENROLLMENT_STATUS.COMPLETED) {
+          certificate = await Certificate.findOne({ enrollment: enrollment._id });
+        }
+        return {
+          ...enrollment.toObject(),
+          certificate: certificate ? certificate.toObject() : null,
+        };
+      })
+    );
+
+    return success(res, 'Enrollments retrieved', enrollmentsWithCertificates);
   } catch (err) {
     next(err);
   }
@@ -182,6 +198,151 @@ exports.getVerifierOverview = async (req, res, next) => {
     ]);
 
     return success(res, 'Verifier overview', { totalCandidates, perCourse });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /verifier/students
+ * Get all students assigned to verifier with their enrollments
+ */
+exports.getVerifierStudents = async (req, res, next) => {
+  try {
+    const verifierId = req.user.id;
+
+    const enrollments = await Enrollment.find({ verifier: verifierId })
+      .populate('student', 'name email college classYear mobile')
+      .populate('course', 'title code hasPracticalSession')
+      .sort({ enrolledAt: -1 });
+
+    return success(res, 'Verifier students retrieved', enrollments);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /verifier/completed-students
+ * Get completed enrollments for verification (not yet verified)
+ */
+exports.getCompletedStudentsForVerification = async (req, res, next) => {
+  try {
+    const verifierId = req.user.id;
+    const Certificate = require('../models/Certificate');
+
+    // Get all completed enrollments for this verifier
+    const enrollments = await Enrollment.find({
+      verifier: verifierId,
+      status: constants.ENROLLMENT_STATUS.COMPLETED,
+    })
+      .populate('student', 'name email college classYear')
+      .populate('course', 'title code hasPracticalSession')
+      .sort({ completedAt: -1 });
+
+    // Filter out enrollments that already have certificates (verified)
+    const enrollmentsWithCertificates = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const certificate = await Certificate.findOne({ enrollment: enrollment._id });
+        return {
+          enrollment,
+          hasCertificate: !!certificate,
+        };
+      })
+    );
+
+    // Return only enrollments without certificates (not yet verified)
+    const unverifiedEnrollments = enrollmentsWithCertificates
+      .filter((item) => !item.hasCertificate)
+      .map((item) => item.enrollment);
+
+    return success(res, 'Completed students for verification', unverifiedEnrollments);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /verifier/verified-students
+ * Get verified students (with certificates)
+ */
+exports.getVerifiedStudents = async (req, res, next) => {
+  try {
+    const verifierId = req.user.id;
+    const Certificate = require('../models/Certificate');
+
+    // Get all completed enrollments for this verifier
+    const enrollments = await Enrollment.find({
+      verifier: verifierId,
+      status: constants.ENROLLMENT_STATUS.COMPLETED,
+    })
+      .populate('student', 'name email college classYear')
+      .populate('course', 'title code hasPracticalSession')
+      .sort({ completedAt: -1 });
+
+    // Get enrollments with certificates
+    const enrollmentsWithCertificates = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const certificate = await Certificate.findOne({ enrollment: enrollment._id })
+          .populate('student', 'name email')
+          .populate('course', 'title code');
+        return {
+          enrollment: enrollment.toObject(),
+          certificate: certificate ? certificate.toObject() : null,
+        };
+      })
+    );
+
+    // Return only enrollments with certificates (verified)
+    const verifiedEnrollments = enrollmentsWithCertificates
+      .filter((item) => item.certificate)
+      .map((item) => ({
+        ...item.enrollment,
+        certificate: item.certificate,
+      }));
+
+    return success(res, 'Verified students retrieved', verifiedEnrollments);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /enrollments/:enrollmentId/complete
+ * Mark enrollment as completed when student finishes all modules
+ */
+exports.completeEnrollment = async (req, res, next) => {
+  try {
+    const { enrollmentId } = req.params;
+
+    const enrollment = await Enrollment.findById(enrollmentId)
+      .populate('course');
+
+    if (!enrollment) {
+      return error(res, 'Enrollment not found', null, 404);
+    }
+
+    // Check if student owns this enrollment
+    if (enrollment.student.toString() !== req.user.id) {
+      return error(res, 'Access denied', null, 403);
+    }
+
+    // Check if already completed
+    if (enrollment.status === constants.ENROLLMENT_STATUS.COMPLETED) {
+      return success(res, 'Enrollment already completed', enrollment);
+    }
+
+    // Check if course is published
+    if (enrollment.course.status !== constants.COURSE_STATUS.PUBLISHED) {
+      return error(res, 'Course is not yet published', null, 400);
+    }
+
+    // Mark as completed
+    enrollment.status = constants.ENROLLMENT_STATUS.COMPLETED;
+    enrollment.completedAt = new Date();
+    await enrollment.save();
+
+    return success(res, 'Enrollment marked as completed', enrollment);
   } catch (err) {
     next(err);
   }

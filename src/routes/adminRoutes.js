@@ -23,6 +23,8 @@ router.use(requireAdmin);
  */
 router.get('/courses', courseController.getAllCourses);
 router.get('/courses/:courseId', courseController.getCourseDetails);
+router.get('/courses/:courseId/results', courseController.getCourseResults);
+router.post('/courses/:courseId/generate-results', courseController.generateCourseResults);
 router.post('/courses', courseController.createCourse);
 router.patch('/courses/:courseId', courseController.updateCourse);
 router.delete('/courses/:courseId', courseController.deleteCourse);

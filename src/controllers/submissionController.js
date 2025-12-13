@@ -83,13 +83,29 @@ exports.submitAssignment = async (req, res, next) => {
     const timeElapsed = (new Date() - submission.startedAt) / 1000 / 60; // minutes
     const timeExceeded = timeElapsed > assignment.timeLimitMinutes;
 
-    // Auto-score MCQs
+    // Auto-score MCQs and Short Answers
     let autoScore = 0;
     answers.forEach((answer) => {
       const question = assignment.questions.id(answer.questionId);
-      if (question && question.qType === constants.QUESTION_TYPE.MCQ) {
-        if (answer.selectedOptionIndex === question.correctOptionIndex) {
+      if (!question) return;
+
+      if (question.qType === constants.QUESTION_TYPE.MCQ) {
+        // MCQ: Check if selected option matches correct option
+        if (answer.selectedOptionIndex !== undefined && 
+            answer.selectedOptionIndex === question.correctOptionIndex) {
           autoScore += question.maxMarks;
+        }
+      } else if (question.qType === constants.QUESTION_TYPE.SHORT || 
+                 question.qType === constants.QUESTION_TYPE.CODE) {
+        // Short Answer/Code: Check if answer includes the correct answer (case-insensitive)
+        if (answer.answerText && question.answerExplanation) {
+          const studentAnswer = answer.answerText.toLowerCase().trim();
+          const correctAnswer = question.answerExplanation.toLowerCase().trim();
+          
+          // Check if student answer includes the correct answer or vice versa
+          if (studentAnswer.includes(correctAnswer) || correctAnswer.includes(studentAnswer)) {
+            autoScore += question.maxMarks;
+          }
         }
       }
     });
@@ -103,21 +119,28 @@ exports.submitAssignment = async (req, res, next) => {
         timeExceeded,
     };
 
-    // Determine status
-    let status = constants.SUBMISSION_STATUS.PENDING;
-    if (flags.cheatingSuspected || autoScore < assignment.maxScore * 0.4) {
+    // Determine status - mark as EVALUATED if no cheating suspected
+    let status = constants.SUBMISSION_STATUS.EVALUATED;
+    if (flags.cheatingSuspected) {
       status = constants.SUBMISSION_STATUS.REJECTED;
     }
 
     // Update submission
     submission.answers = answers;
     submission.autoScore = autoScore;
-    submission.totalScore = autoScore; // Will be updated after manual evaluation
+    submission.totalScore = autoScore; // Auto-evaluated score (will be updated if manual evaluation happens)
     submission.submittedAt = new Date();
     submission.flags = flags;
     submission.status = status;
 
+    // If auto-evaluated and not rejected, mark as evaluated
+    if (status === constants.SUBMISSION_STATUS.EVALUATED) {
+      submission.evaluatedAt = new Date();
+    }
+
     await submission.save();
+
+    console.log(`Submission ${submission._id} saved with autoScore: ${autoScore}, totalScore: ${submission.totalScore}, status: ${status}`);
 
     return success(res, 'Assignment submitted', submission);
   } catch (err) {

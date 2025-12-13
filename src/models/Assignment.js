@@ -17,10 +17,10 @@ const questionSchema = new mongoose.Schema({
     },
   ],
   correctOptionIndex: {
-    type: Number, // For MCQ auto-scoring
+    type: Number, // For MCQ auto-scoring (index of correct option)
   },
-  answerText: {
-    type: String, // Answer explanation/text for MCQ questions
+  answerExplanation: {
+    type: String, // Answer explanation for short answer questions only
     trim: true,
   },
   maxMarks: {

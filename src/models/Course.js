@@ -27,12 +27,6 @@ const courseSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    tutors: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
     verifiers: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -48,6 +42,10 @@ const courseSchema = new mongoose.Schema(
       type: String,
       enum: [constants.COURSE_STATUS.DRAFT, constants.COURSE_STATUS.PUBLISHED, constants.COURSE_STATUS.ARCHIVED],
       default: constants.COURSE_STATUS.DRAFT,
+    },
+    hasPracticalSession: {
+      type: Boolean,
+      default: false,
     },
     startTimestamp: {
       type: Date,

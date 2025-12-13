@@ -19,6 +19,9 @@ router.use(requireVerifier);
  */
 router.get('/courses', courseController.getVerifierCourses);
 router.get('/overview', enrollmentController.getVerifierOverview);
+router.get('/students', enrollmentController.getVerifierStudents);
+router.get('/completed-students', enrollmentController.getCompletedStudentsForVerification);
+router.get('/verified-students', enrollmentController.getVerifiedStudents);
 
 /**
  * Students
@@ -97,6 +100,11 @@ router.get('/certificates/:certificateId/download', certificateController.downlo
  */
 router.get('/doubts', doubtController.getVerifierDoubts);
 router.patch('/doubts/:doubtId/answer', doubtController.answerDoubt);
+
+/**
+ * Verification and Certificates
+ */
+router.post('/enrollments/:enrollmentId/verify', certificateController.verifyAndGenerateCertificate);
 
 module.exports = router;
 

@@ -32,6 +32,7 @@ router.get('/courses/available', courseController.getAvailableCourses);
 router.get('/enrollments', enrollmentController.getStudentEnrollments);
 router.post('/courses/:courseId/enroll', enrollmentController.enrollInCourse);
 router.get('/enrollments/:id', enrollmentController.getEnrollment);
+router.post('/enrollments/:enrollmentId/complete', enrollmentController.completeEnrollment);
 
 /**
  * Modules
