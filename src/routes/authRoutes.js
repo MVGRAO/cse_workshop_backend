@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const authenticate = require('../middleware/auth');
+const { protectUser } = require('../middleware/auth');
 
 /**
  * @route   POST /api/v1/auth/google
@@ -43,7 +43,7 @@ router.post('/forgot-password', authController.forgotPassword);
  * @desc    Get current user profile
  * @access  Private
  */
-router.get('/me', authenticate, authController.getMe);
+router.get('/me', protectUser, authController.getMe);
 
 /**
  * @route   GET /api/v1/auth/dev-token
@@ -57,14 +57,14 @@ router.get('/dev-token', authController.getDevToken);
  * @desc    Update current user profile
  * @access  Private
  */
-router.put('/profile', authenticate, authController.updateProfile);
+router.put('/profile', protectUser, authController.updateProfile);
 
 /**
  * @route   DELETE /api/v1/auth/account
  * @desc    Delete current user account
  * @access  Private
  */
-router.delete('/account', authenticate, authController.deleteAccount);
+router.delete('/account', protectUser, authController.deleteAccount);
 
 module.exports = router;
 

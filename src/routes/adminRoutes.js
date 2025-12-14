@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const authenticate = require('../middleware/auth');
-const { requireAdmin } = require('../middleware/role');
+const { protectAdmin } = require('../middleware/auth');
+// const { requireAdmin } = require('../middleware/role'); // Removed as integrated into protectAdmin
 const courseController = require('../controllers/courseController');
 const moduleController = require('../controllers/moduleController');
 const lessonController = require('../controllers/lessonController');
@@ -13,10 +13,8 @@ const certificateController = require('../controllers/certificateController');
 const User = require('../models/User');
 const { success, error } = require('../utils/response');
 
-// Apply authentication and admin role to all routes
-// NOTE: This only applies to routes defined AFTER this middleware
-router.use(authenticate);
-router.use(requireAdmin);
+// Apply strict admin authentication to all routes
+router.use(protectAdmin);
 
 /**
  * Courses

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const authenticate = require('../middleware/auth');
-const { requireStudent } = require('../middleware/role');
+const { protectStudent } = require('../middleware/auth');
+// const { requireStudent } = require('../middleware/role'); // Integrated
 const studentController = require('../controllers/studentController');
 const courseController = require('../controllers/courseController');
 const lessonController = require('../controllers/lessonController');
@@ -12,9 +12,8 @@ const submissionController = require('../controllers/submissionController');
 const certificateController = require('../controllers/certificateController');
 const doubtController = require('../controllers/doubtController');
 
-// Apply authentication and student role to all routes
-router.use(authenticate);
-router.use(requireStudent);
+// Apply strict student authentication
+router.use(protectStudent);
 
 /**
  * Dashboard

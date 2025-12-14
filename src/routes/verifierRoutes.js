@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const authenticate = require('../middleware/auth');
-const { requireVerifier } = require('../middleware/role');
+const { protectVerifier } = require('../middleware/auth');
+// const { requireVerifier } = require('../middleware/role'); // Integrated
 const courseController = require('../controllers/courseController');
 const enrollmentController = require('../controllers/enrollmentController');
 const evaluationController = require('../controllers/evaluationController');
@@ -10,9 +10,8 @@ const certificateController = require('../controllers/certificateController');
 const User = require('../models/User');
 const Enrollment = require('../models/Enrollment');
 
-// Apply authentication and verifier role to all routes
-router.use(authenticate);
-router.use(requireVerifier);
+// Apply strict verifier authentication
+router.use(protectVerifier);
 
 /**
  * Courses
