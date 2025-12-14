@@ -60,6 +60,7 @@ exports.updateUser = async (req, res, next) => {
 
     if (role) user.role = role;
     if (typeof isActive === 'boolean') user.isActive = isActive;
+    if (typeof req.body.isBlocked === 'boolean') user.isBlocked = req.body.isBlocked;
     if (college !== undefined) user.college = college;
     if (classYear !== undefined) user.classYear = classYear;
     if (mobile !== undefined) user.mobile = mobile;
@@ -72,6 +73,7 @@ exports.updateUser = async (req, res, next) => {
       email: user.email,
       role: user.role,
       isActive: user.isActive,
+      isBlocked: user.isBlocked,
       college: user.college,
       classYear: user.classYear,
       mobile: user.mobile,

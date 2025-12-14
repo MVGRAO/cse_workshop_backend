@@ -13,7 +13,7 @@ const constants = require('../utils/constants');
 exports.getStudentCertificates = async (req, res, next) => {
   try {
     const certificates = await Certificate.find({ student: req.user.id })
-      .populate('course', 'title code')
+      .populate('course', 'title code resultsGenerated')
       .sort({ issueDate: -1 });
 
     return success(res, 'Certificates retrieved', certificates);
@@ -139,7 +139,7 @@ exports.verifyAndGenerateCertificate = async (req, res, next) => {
     // Get total raw theoretical marks (sum of all assignment marks)
     let totalRawTheoryMarks = 0;
     const assignmentCount = submissions.length;
-    
+
     submissions.forEach((submission) => {
       // Sum all assignment marks (theoretical marks)
       const score = submission.totalScore || submission.autoScore || 0;

@@ -47,6 +47,10 @@ const courseSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    resultsGenerated: {
+      type: Boolean,
+      default: false,
+    },
     startTimestamp: {
       type: Date,
     },

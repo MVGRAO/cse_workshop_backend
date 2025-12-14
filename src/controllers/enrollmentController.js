@@ -11,9 +11,9 @@ const constants = require('../utils/constants');
 exports.getStudentEnrollments = async (req, res, next) => {
   try {
     const Certificate = require('../models/Certificate');
-    
+
     const enrollments = await Enrollment.find({ student: req.user.id })
-      .populate('course', 'title code category level status description')
+      .populate('course', 'title code category level status description resultsGenerated')
       .populate('verifier', 'name email college')
       .sort({ enrolledAt: -1 });
 
