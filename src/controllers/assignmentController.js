@@ -58,12 +58,19 @@ exports.getModuleAssignment = async (req, res, next) => {
       .populate('course', 'title code')
       .populate('module', 'title');
 
-    // Remove correct answers for students
+    // Remove correct answers for students and jumble questions
     if (req.user.role === constants.ROLES.STUDENT) {
-      assignment.questions = assignment.questions.map((q) => {
-        const question = q.toObject();
-        delete question.correctOptionIndex;
-        return question;
+      let questions = assignment.questions.map((q) => q.toObject());
+
+      // Jumble questions (Fisher-Yates Shuffle)
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+
+      assignment.questions = questions.map((q) => {
+        delete q.correctOptionIndex;
+        return q;
       });
     }
 
