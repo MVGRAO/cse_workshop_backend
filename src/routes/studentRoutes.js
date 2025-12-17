@@ -24,6 +24,7 @@ router.get('/dashboard', studentController.getDashboard);
  * Courses
  */
 router.get('/courses/available', courseController.getAvailableCourses);
+router.get('/courses/:courseId/details', courseController.getStudentCourseDetails);
 
 /**
  * Enrollments
@@ -45,6 +46,7 @@ router.get('/modules/:moduleId', moduleController.getModule);
 router.get('/modules/:moduleId/assignment', assignmentController.getModuleAssignment);
 router.post('/assignments/:assignmentId/start', submissionController.startSubmission);
 router.post('/assignments/:assignmentId/submit', submissionController.submitAssignment);
+router.get('/assignments/:assignmentId/review', submissionController.getAssignmentReview);
 
 /**
  * Certificates

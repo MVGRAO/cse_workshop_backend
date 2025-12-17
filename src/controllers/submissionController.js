@@ -91,17 +91,17 @@ exports.submitAssignment = async (req, res, next) => {
 
       if (question.qType === constants.QUESTION_TYPE.MCQ) {
         // MCQ: Check if selected option matches correct option
-        if (answer.selectedOptionIndex !== undefined && 
-            answer.selectedOptionIndex === question.correctOptionIndex) {
+        if (answer.selectedOptionIndex !== undefined &&
+          answer.selectedOptionIndex === question.correctOptionIndex) {
           autoScore += question.maxMarks;
         }
-      } else if (question.qType === constants.QUESTION_TYPE.SHORT || 
-                 question.qType === constants.QUESTION_TYPE.CODE) {
+      } else if (question.qType === constants.QUESTION_TYPE.SHORT ||
+        question.qType === constants.QUESTION_TYPE.CODE) {
         // Short Answer/Code: Check if answer includes the correct answer (case-insensitive)
         if (answer.answerText && question.answerExplanation) {
           const studentAnswer = answer.answerText.toLowerCase().trim();
           const correctAnswer = question.answerExplanation.toLowerCase().trim();
-          
+
           // Check if student answer includes the correct answer or vice versa
           if (studentAnswer.includes(correctAnswer) || correctAnswer.includes(studentAnswer)) {
             autoScore += question.maxMarks;
@@ -143,6 +143,83 @@ exports.submitAssignment = async (req, res, next) => {
     console.log(`Submission ${submission._id} saved with autoScore: ${autoScore}, totalScore: ${submission.totalScore}, status: ${status}`);
 
     return success(res, 'Assignment submitted', submission);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /assignments/:assignmentId/review
+ * Get assignment review data (with correct answers)
+ */
+exports.getAssignmentReview = async (req, res, next) => {
+  try {
+    const { assignmentId } = req.params;
+    const assignment = await Assignment.findById(assignmentId);
+
+    if (!assignment) {
+      return error(res, 'Assignment not found', null, 404);
+    }
+
+    // Check submission
+    const submission = await Submission.findOne({
+      student: req.user.id,
+      assignment: assignmentId,
+    });
+
+    if (!submission) {
+      return error(res, 'Submission not found', null, 404);
+    }
+
+    // Map questions to include student answers and correct answers
+    const answers = assignment.questions.map((q) => {
+      // Find student's answer for this question
+      const studentAns = submission.answers
+        ? submission.answers.find(a => a.questionId.toString() === q._id.toString())
+        : null;
+
+      let marksAwarded = 0;
+      let studentSelectedOptionIndex = -1;
+      let studentAnswerText = "";
+
+      if (studentAns) {
+        studentSelectedOptionIndex = studentAns.selectedOptionIndex !== undefined ? studentAns.selectedOptionIndex : -1;
+        studentAnswerText = studentAns.answerText || "";
+
+        // Recalculate or estimate marks for display
+        if (q.qType === constants.QUESTION_TYPE.MCQ) {
+          if (studentSelectedOptionIndex === q.correctOptionIndex) marksAwarded = q.maxMarks;
+        } else if (q.qType === constants.QUESTION_TYPE.SHORT || q.qType === constants.QUESTION_TYPE.CODE) {
+          if (studentAnswerText && q.answerExplanation) {
+            const sa = studentAnswerText.toLowerCase().trim();
+            const ca = q.answerExplanation.toLowerCase().trim();
+            if (sa && (sa.includes(ca) || ca.includes(sa))) marksAwarded = q.maxMarks;
+          }
+        }
+      }
+
+      return {
+        questionId: q._id,
+        questionText: q.questionText,
+        qType: q.qType,
+        maxMarks: q.maxMarks,
+        options: q.options,
+        correctOptionIndex: q.correctOptionIndex,
+        correctAnswerText: q.answerExplanation,
+        studentSelectedOptionIndex,
+        studentAnswerText,
+        marksAwarded
+      };
+    });
+
+    return success(res, 'Review data retrieved', {
+      id: submission._id,
+      totalScore: submission.totalScore || 0,
+      maxScore: assignment.maxScore,
+      answers,
+      submittedAt: submission.submittedAt
+    });
+
   } catch (err) {
     next(err);
   }

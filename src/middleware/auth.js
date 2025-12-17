@@ -169,13 +169,19 @@ exports.protectUser = async (req, res, next) => {
     const decoded = verifyToken(req);
 
     // Strict Check: Must be Student or Verifier
-    if (decoded.role !== constants.ROLES.STUDENT && decoded.role !== constants.ROLES.VERIFIER) {
+    // Allow if role is STUDENT or VERIFIER
+    const isStudent = decoded.role === constants.ROLES.STUDENT;
+    const isVerifier = decoded.role === constants.ROLES.VERIFIER;
+
+    if (!isStudent && !isVerifier) {
+      // Debug log for easier troubleshooting
+      console.log(`[Auth] Access denied to /auth/me for role: ${decoded.role} (Expected: ${constants.ROLES.STUDENT} or ${constants.ROLES.VERIFIER})`);
       return error(res, 'Access denied. Users only.', null, 403);
     }
 
     const user = await User.findById(decoded.userId).select('-__v');
-    if (!user || !user.isActive) {
-      return error(res, 'User access denied.', null, 403);
+    if (!user || user.isActive === false) { // Explicitly check isActive false, in case undefined
+      return error(res, 'User access denied (User not found or inactive).', null, 403);
     }
 
     req.user = { id: user._id.toString(), role: user.role, email: user.email };

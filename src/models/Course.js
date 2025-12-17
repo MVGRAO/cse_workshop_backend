@@ -19,6 +19,10 @@ const courseSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    image: {
+      type: String, // Cloudinary URL
+      default: '',
+    },
     category: {
       type: String,
       trim: true,

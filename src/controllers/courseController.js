@@ -23,6 +23,7 @@ exports.createCourse = async (req, res, next) => {
       hasPracticalSession: hasPracticalSession || false,
       startTimestamp,
       endTimestamp,
+      image: req.file ? req.file.path : '',
     });
 
     return success(res, 'Course created', course, null, 201);
@@ -58,6 +59,60 @@ exports.getAvailableCourses = async (req, res, next) => {
     });
 
     return success(res, 'Available courses retrieved', enriched);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /student/courses/:courseId/details
+ * Get detailed course info for student (including enrollment status and structure)
+ */
+exports.getStudentCourseDetails = async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+    const course = await Course.findOne({
+      _id: courseId
+    })
+      .populate('createdBy', 'name')
+      .populate('verifiers', 'name');
+
+    if (!course) {
+      return error(res, 'Course not found', null, 404);
+    }
+
+    // Check enrollment
+    const Enrollment = require('../models/Enrollment');
+    const enrollment = await Enrollment.findOne({ course: courseId, student: req.user.id });
+
+    // Fetch lessons
+    const Lesson = require('../models/Lesson');
+    const Module = require('../models/Module');
+
+    const lessons = await Lesson.find({ course: courseId }).sort({ index: 1 }).lean();
+
+    // Fetch all modules for this course
+    const modules = await Module.find({ course: courseId })
+      .sort({ lesson: 1, index: 1 })
+      .populate({
+        path: 'assignment',
+        select: '_id maxScore'
+      })
+      .lean();
+
+    // Group modules by lesson
+    const lessonsWithModules = lessons.map(lesson => ({
+      ...lesson,
+      modules: modules.filter(m => m.lesson.toString() === lesson._id.toString())
+    }));
+
+    return success(res, 'Course details fetched', {
+      course,
+      lessons: lessonsWithModules,
+      isEnrolled: !!enrollment,
+      enrollmentId: enrollment ? enrollment._id : null
+    });
+
   } catch (err) {
     next(err);
   }
@@ -160,6 +215,10 @@ exports.updateCourse = async (req, res, next) => {
   try {
     const { courseId } = req.params;
     const updateData = req.body;
+
+    if (req.file) {
+      updateData.image = req.file.path;
+    }
 
     const course = await Course.findById(courseId);
 

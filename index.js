@@ -29,14 +29,15 @@ connectDB();
 
 // Security middleware
 app.use(helmet());
+app.use(cors({
+  origin: '*', // Allow all for debugging "Failed to fetch"
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // CORS configuration
-app.use(
-  cors({
-    origin: config.FRONTEND_URL,
-    credentials: true,
-  })
-);
+// CORS configuration (Already applied above)
+// app.use(cors(...));
 
 // Body parser middleware
 app.use(express.json());

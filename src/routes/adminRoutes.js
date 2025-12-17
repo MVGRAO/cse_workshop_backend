@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { upload } = require('../utils/cloudinary');
 const { protectAdmin } = require('../middleware/auth');
 // const { requireAdmin } = require('../middleware/role'); // Removed as integrated into protectAdmin
 const courseController = require('../controllers/courseController');
@@ -23,8 +24,8 @@ router.get('/courses', courseController.getAllCourses);
 router.get('/courses/:courseId', courseController.getCourseDetails);
 router.get('/courses/:courseId/results', courseController.getCourseResults);
 router.post('/courses/:courseId/generate-results', courseController.generateCourseResults);
-router.post('/courses', courseController.createCourse);
-router.patch('/courses/:courseId', courseController.updateCourse);
+router.post('/courses', upload.single('image'), courseController.createCourse);
+router.patch('/courses/:courseId', upload.single('image'), courseController.updateCourse);
 router.delete('/courses/:courseId', courseController.deleteCourse);
 router.post('/courses/:courseId/publish', courseController.publishCourse);
 router.post('/courses/:courseId/assign-verifier', courseController.assignVerifier);
