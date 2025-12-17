@@ -18,14 +18,15 @@ module.exports = {
   // Allowed College Email Domains (comma-separated)
   ALLOWED_EMAIL_DOMAINS: process.env.ALLOWED_EMAIL_DOMAINS 
     ? process.env.ALLOWED_EMAIL_DOMAINS.split(',') 
-    : ['@college.edu', '@university.edu'],
+    : ['@college.edu', '@university.edu','@rguktn.ac.in'],
 
   // Email Configuration
   EMAIL_HOST: process.env.EMAIL_HOST || 'smtp.gmail.com',
   EMAIL_PORT: process.env.EMAIL_PORT || 587,
-  EMAIL_USER: process.env.EMAIL_USER || '',
-  EMAIL_PASS: process.env.EMAIL_PASS || '',
-  EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@workshop.edu',
+  EMAIL_USER: process.env.EMAIL_USER || 'cseworkshop360@gmail.com',
+  // Note: Gmail app passwords are typically provided without spaces.
+  EMAIL_PASS: process.env.EMAIL_PASS || 'esnxrvzhvhikprop',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'CSE Workshop <cseworkshop360@gmail.com>',
 
   // Frontend URL (for CORS)
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',

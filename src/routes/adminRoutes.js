@@ -12,6 +12,7 @@ const analyticsController = require('../controllers/analyticsController');
 const enrollmentController = require('../controllers/enrollmentController');
 const certificateController = require('../controllers/certificateController');
 const User = require('../models/User');
+const emailService = require('../services/emailService');
 const { success, error } = require('../utils/response');
 
 // Apply strict admin authentication to all routes
@@ -29,6 +30,7 @@ router.patch('/courses/:courseId', upload.single('image'), courseController.upda
 router.delete('/courses/:courseId', courseController.deleteCourse);
 router.post('/courses/:courseId/publish', courseController.publishCourse);
 router.post('/courses/:courseId/assign-verifier', courseController.assignVerifier);
+router.patch('/courses/:courseId/stop', courseController.stopCourse);
 
 /**
  * Lessons
@@ -60,6 +62,24 @@ router.delete('/users/:userId', userController.deleteUser);
  * Enrollments
  */
 router.get('/enrollments/:id', enrollmentController.getEnrollment);
+router.get('/courses/:courseId/enrollments', enrollmentController.getCourseEnrollmentsAdmin);
+
+/**
+ * Email testing (admin only)
+ */
+router.post('/test-email', async (req, res, next) => {
+  try {
+    const { to } = req.body || {};
+    const targetEmail = to || req.user.email;
+    const targetName = req.user.name || 'Admin';
+
+    await emailService.sendRegistrationEmail(targetEmail, targetName);
+
+    return success(res, 'Test email sent', null);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * Create Verifier

@@ -3,6 +3,8 @@ const Course = require('../models/Course');
 const User = require('../models/User');
 const { success, error } = require('../utils/response');
 const constants = require('../utils/constants');
+const config = require('../config/env');
+const emailService = require('../services/emailService');
 
 /**
  * GET /student/enrollments
@@ -120,6 +122,18 @@ exports.enrollInCourse = async (req, res, next) => {
       .populate('course', 'title code')
       .populate('student', 'name email');
 
+    // Send enrollment confirmation email
+    try {
+      await emailService.sendEnrollmentEmail(
+        populatedEnrollment.student.email,
+        populatedEnrollment.student.name || profileSnapshot.name,
+        populatedEnrollment.course.title,
+        course.startTimestamp
+      );
+    } catch (e) {
+      console.error('Failed to send enrollment email', e);
+    }
+
     return success(res, 'Enrolled successfully', populatedEnrollment, null, 201);
   } catch (err) {
     next(err);
@@ -153,6 +167,30 @@ exports.getEnrollment = async (req, res, next) => {
     }
 
     return success(res, 'Enrollment retrieved', enrollment);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /admin/courses/:courseId/enrollments
+ * Get all enrollments for a specific course (admin)
+ */
+exports.getCourseEnrollmentsAdmin = async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return error(res, 'Course not found', null, 404);
+    }
+
+    const enrollments = await Enrollment.find({ course: courseId })
+      .populate('student', 'name email college classYear mobile')
+      .populate('verifier', 'name email')
+      .sort({ enrolledAt: -1 });
+
+    return success(res, 'Course enrollments retrieved', enrollments);
   } catch (err) {
     next(err);
   }

@@ -208,6 +208,33 @@ exports.updateProfile = async (req, res, next) => {
 };
 
 /**
+ * PUT /auth/profile/avatar
+ * Update user avatar
+ */
+exports.updateAvatar = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return error(res, 'User not found', null, 404);
+    }
+
+    if (req.file) {
+      user.avatarUrl = req.file.path;
+      await user.save();
+
+      return success(res, 'Avatar updated successfully', {
+        avatarUrl: user.avatarUrl
+      });
+    } else {
+      return error(res, 'No image file provided', null, 400);
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * DELETE /auth/account
  * Delete current user account
  */
@@ -476,18 +503,18 @@ exports.forgotPassword = async (req, res, next) => {
 exports.getDevToken = async (req, res, next) => {
   try {
     const config = require('../config/env');
-    
+
     if (!config.DEV_MODE || !config.DEV_BYPASS_AUTH) {
       return error(res, 'This endpoint is only available in development mode', null, 403);
     }
 
     // Find or create a dev user
     let devUser = await User.findOne({ email: 'dev@test.com' });
-    
+
     if (!devUser) {
       // Try to find any existing user
       devUser = await User.findOne();
-      
+
       if (!devUser) {
         // Create a mock dev user
         devUser = await User.create({

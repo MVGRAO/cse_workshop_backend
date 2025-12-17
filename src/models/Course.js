@@ -47,6 +47,10 @@ const courseSchema = new mongoose.Schema(
       enum: [constants.COURSE_STATUS.DRAFT, constants.COURSE_STATUS.PUBLISHED, constants.COURSE_STATUS.ARCHIVED],
       default: constants.COURSE_STATUS.DRAFT,
     },
+    isStopped: {
+      type: Boolean,
+      default: false,
+    },
     hasPracticalSession: {
       type: Boolean,
       default: false,

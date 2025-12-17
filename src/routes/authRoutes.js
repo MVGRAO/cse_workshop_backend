@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { protectUser } = require('../middleware/auth');
+const { upload } = require('../utils/cloudinary');
 
 /**
  * @route   POST /api/v1/auth/google
@@ -58,6 +59,13 @@ router.get('/dev-token', authController.getDevToken);
  * @access  Private
  */
 router.put('/profile', protectUser, authController.updateProfile);
+
+/**
+ * @route   PUT /api/v1/auth/profile/avatar
+ * @desc    Update current user avatar
+ * @access  Private
+ */
+router.put('/profile/avatar', protectUser, upload.single('avatar'), authController.updateAvatar);
 
 /**
  * @route   DELETE /api/v1/auth/account

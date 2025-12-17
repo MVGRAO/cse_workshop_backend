@@ -3,6 +3,9 @@ const Module = require('../models/Module');
 const Enrollment = require('../models/Enrollment');
 const { success, error } = require('../utils/response');
 const constants = require('../utils/constants');
+const config = require('../config/env');
+const emailService = require('../services/emailService');
+const logger = require('../utils/logger');
 
 /**
  * POST /admin/courses
@@ -88,17 +91,41 @@ exports.getStudentCourseDetails = async (req, res, next) => {
     // Fetch lessons
     const Lesson = require('../models/Lesson');
     const Module = require('../models/Module');
+    const Assignment = require('../models/Assignment');
 
     const lessons = await Lesson.find({ course: courseId }).sort({ index: 1 }).lean();
 
     // Fetch all modules for this course
-    const modules = await Module.find({ course: courseId })
+    const rawModules = await Module.find({ course: courseId })
       .sort({ lesson: 1, index: 1 })
       .populate({
         path: 'assignment',
-        select: '_id maxScore'
+        // Populate full assignment so we can shape a safe student-facing view
       })
       .lean();
+
+    // Sanitize assignments for student view (do not expose correct answers)
+    const modules = rawModules.map(m => {
+      if (m.assignment) {
+        const a = m.assignment;
+        const safeQuestions = Array.isArray(a.questions)
+          ? a.questions.map(q => ({
+            _id: q._id,
+            qType: q.qType,
+            questionText: q.questionText,
+            options: q.options,
+            maxMarks: q.maxMarks,
+          }))
+          : [];
+
+        m.assignment = {
+          _id: a._id,
+          maxScore: a.maxScore,
+          questions: safeQuestions,
+        };
+      }
+      return m;
+    });
 
     // Group modules by lesson
     const lessonsWithModules = lessons.map(lesson => ({
@@ -106,11 +133,15 @@ exports.getStudentCourseDetails = async (req, res, next) => {
       modules: modules.filter(m => m.lesson.toString() === lesson._id.toString())
     }));
 
+    // Get total enrollment count
+    const enrollmentCount = await Enrollment.countDocuments({ course: courseId });
+
     return success(res, 'Course details fetched', {
       course,
       lessons: lessonsWithModules,
       isEnrolled: !!enrollment,
-      enrollmentId: enrollment ? enrollment._id : null
+      enrollmentId: enrollment ? enrollment._id : null,
+      enrollmentCount
     });
 
   } catch (err) {
@@ -242,28 +273,7 @@ exports.updateCourse = async (req, res, next) => {
   }
 };
 
-/**
- * POST /admin/courses/:courseId/publish
- * Publish course
- */
-exports.publishCourse = async (req, res, next) => {
-  try {
-    const { courseId } = req.params;
 
-    const course = await Course.findById(courseId);
-
-    if (!course) {
-      return error(res, 'Course not found', null, 404);
-    }
-
-    course.status = constants.COURSE_STATUS.PUBLISHED;
-    await course.save();
-
-    return success(res, 'Course published', course);
-  } catch (err) {
-    next(err);
-  }
-};
 
 /**
  * POST /admin/courses/:courseId/assign-verifier
@@ -312,6 +322,7 @@ exports.getCourseDetails = async (req, res, next) => {
 
     const Module = require('../models/Module');
     const Assignment = require('../models/Assignment');
+    const Enrollment = require('../models/Enrollment');
 
     const lessonsWithModules = await Promise.all(
       lessons.map(async (lesson) => {
@@ -337,9 +348,13 @@ exports.getCourseDetails = async (req, res, next) => {
       })
     );
 
+    // Enrollment stats for this course
+    const enrollmentCount = await Enrollment.countDocuments({ course: courseId });
+
     return success(res, 'Course details retrieved', {
       course,
       lessons: lessonsWithModules,
+      enrollmentCount,
     });
   } catch (err) {
     next(err);
@@ -524,6 +539,36 @@ exports.generateCourseResults = async (req, res, next) => {
     course.resultsGenerated = true;
     await course.save();
 
+    // Notify all completed students that results have been generated
+    // This includes both newly generated certificates and existing ones
+    try {
+      const emailPromises = enrollments.map(async (enrollment) => {
+        try {
+          // Ensure student is populated
+          if (!enrollment.student || typeof enrollment.student === 'string') {
+            await enrollment.populate('student', 'name email');
+          }
+          
+          if (enrollment.student && enrollment.student.email) {
+            await emailService.sendResultsGeneratedEmail(
+              enrollment.student.email,
+              enrollment.student.name,
+              course.title,
+              config.FRONTEND_URL
+            );
+            logger.info(`Results generated email sent to ${enrollment.student.email} for course ${course.title}`);
+          }
+        } catch (e) {
+          logger.error(`Failed to send results generated email to enrollment ${enrollment._id}:`, e);
+        }
+      });
+
+      await Promise.all(emailPromises);
+      logger.info(`Results generated emails sent to ${enrollments.length} students for course ${course.title}`);
+    } catch (e) {
+      logger.error('Error sending results generated emails:', e);
+    }
+
     return success(res, 'Results generated', {
       generated: results.filter(r => r.status === 'generated').length,
       alreadyExists: results.filter(r => r.status === 'already_exists').length,
@@ -531,6 +576,69 @@ exports.generateCourseResults = async (req, res, next) => {
       results,
       errors: errors.length > 0 ? errors : undefined,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /admin/courses/:courseId/publish
+ * Publish a course
+ */
+exports.publishCourse = async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+    const { startTimestamp, endTimestamp } = req.body;
+
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return error(res, 'Course not found', null, 404);
+    }
+
+    // Check if course has lessons
+    const Lesson = require('../models/Lesson');
+    const lessonCount = await Lesson.countDocuments({ course: courseId });
+
+    if (lessonCount === 0) {
+      return error(res, 'Cannot publish a course with no lessons', null, 400);
+    }
+
+    course.status = constants.COURSE_STATUS.PUBLISHED;
+
+    if (startTimestamp) {
+      course.startTimestamp = new Date(startTimestamp);
+    }
+
+    if (endTimestamp) {
+      course.endTimestamp = new Date(endTimestamp);
+    }
+
+    await course.save();
+
+    // Notify enrolled students that course is published
+    try {
+      const Enrollment = require('../models/Enrollment');
+      const enrollments = await Enrollment.find({ course: courseId })
+        .populate('student', 'name email');
+
+      await Promise.all(
+        enrollments.map((enrollment) =>
+          emailService.sendCoursePublishedEmail(
+            enrollment.student.email,
+            enrollment.student.name,
+            course.title,
+            config.FRONTEND_URL
+          ).catch((e) => {
+            console.error('Failed to send course published email', e);
+          })
+        )
+      );
+    } catch (e) {
+      console.error('Error sending course published emails', e);
+    }
+
+    return success(res, 'Course published successfully', course);
   } catch (err) {
     next(err);
   }
@@ -579,6 +687,29 @@ exports.deleteCourse = async (req, res, next) => {
     await Course.findByIdAndDelete(courseId);
 
     return success(res, 'Course deleted successfully', null);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * PATCH /admin/courses/:courseId/stop
+ * Stop a course
+ */
+exports.stopCourse = async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return error(res, 'Course not found', null, 404);
+    }
+
+    course.isStopped = true;
+    await course.save();
+
+    return success(res, 'Course stopped successfully', course);
   } catch (err) {
     next(err);
   }
