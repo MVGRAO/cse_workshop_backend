@@ -9,8 +9,8 @@ const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error
-  logger.error(`Error: ${err.message}`);
+  // Log error with full stack trace
+  logger.error(`Error: ${err.message}`, err);
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
@@ -20,7 +20,8 @@ const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key
   if (err.code === 11000) {
-    const message = 'Duplicate field value entered';
+    const field = Object.keys(err.keyPattern)[0];
+    const message = `${field} already exists`;
     error = { message, statusCode: 400 };
   }
 
@@ -41,6 +42,12 @@ const errorHandler = (err, req, res, next) => {
     error = { message, statusCode: 401 };
   }
 
+  // Multer file upload errors
+  if (err.name === 'MulterError') {
+    const message = `File upload error: ${err.message}`;
+    error = { message, statusCode: 400 };
+  }
+
   const statusCode = error.statusCode || 500;
   const message = error.message || 'Server Error';
 
@@ -48,7 +55,10 @@ const errorHandler = (err, req, res, next) => {
   return res.status(statusCode).json({
     success: false,
     message,
-    ...(config.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(config.NODE_ENV === 'development' && { 
+      error: err.message,
+      stack: err.stack 
+    }),
   });
 };
 

@@ -15,22 +15,42 @@ exports.createCourse = async (req, res, next) => {
   try {
     const { title, code, description, category, level, verifiers, startTimestamp, endTimestamp, hasPracticalSession } = req.body;
 
+    // Validate required fields
+    if (!title || !code) {
+      return error(res, 'Title and code are required', null, 400);
+    }
+
+    // Handle verifiers - could be string, array, or multiple form fields
+    let verifiersArray = [];
+    if (verifiers) {
+      // If it's a string, convert to array; if already array, keep as is
+      verifiersArray = Array.isArray(verifiers) ? verifiers : [verifiers];
+      // Filter out empty strings
+      verifiersArray = verifiersArray.filter(v => v && v.trim());
+    }
+
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return error(res, 'Unauthorized - user not found', null, 401);
+    }
+
     const course = await Course.create({
-      title,
-      code,
-      description,
-      category,
-      level,
-      verifiers: verifiers || [],
+      title: title.trim(),
+      code: code.trim().toUpperCase(),
+      description: description ? description.trim() : '',
+      category: category ? category.trim() : '',
+      level: level ? level.trim() : '',
+      verifiers: verifiersArray,
       createdBy: req.user.id,
-      hasPracticalSession: hasPracticalSession || false,
-      startTimestamp,
-      endTimestamp,
+      hasPracticalSession: hasPracticalSession === 'true' || hasPracticalSession === true,
+      startTimestamp: startTimestamp ? new Date(startTimestamp) : undefined,
+      endTimestamp: endTimestamp ? new Date(endTimestamp) : undefined,
       image: req.file ? req.file.path : '',
     });
 
     return success(res, 'Course created', course, null, 201);
   } catch (err) {
+    logger.error('Error creating course:', err);
     next(err);
   }
 };
