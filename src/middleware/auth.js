@@ -15,6 +15,7 @@ const verifyToken = (req) => {
     throw new Error('No token provided');
   }
   const token = req.headers.authorization.split(' ')[1];
+  console.log(config.JWT_SECRET);
   return jwt.verify(token, config.JWT_SECRET);
 };
 

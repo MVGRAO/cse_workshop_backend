@@ -23,7 +23,7 @@ router.get('/dashboard', studentController.getDashboard);
 /**
  * Courses
  */
-router.get('/courses/available', courseController.getAvailableCourses);
+router.get('/courses/available',  courseController.getAvailableCourses);
 router.get('/courses/:courseId/details', courseController.getStudentCourseDetails);
 
 /**

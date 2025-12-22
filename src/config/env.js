@@ -8,7 +8,7 @@ module.exports = {
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb+srv://cseworkshop360_db_user:85q2Udl9nbzJyQHu@cseworkshops.enwejeq.mongodb.net/cse_workshop?appName=CseWorkshops',
 
   // JWT
-  JWT_SECRET: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
+  JWT_SECRET: process.env.JWT_SECRET || 'cseworkshop_9f8d7f6a5e4d3c2b1a0_secure_jwt_secret_2025',
   JWT_EXPIRE: process.env.JWT_EXPIRE || '7d',
 
   // Google OAuth
